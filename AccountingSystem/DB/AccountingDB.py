@@ -188,10 +188,12 @@ class AccountingDB( DB ):
     pending = 0
     now = Time.toEpoch()
     recordsPerSlot = self.getCSOption( "RecordsPerSlot", 100 )
-    for typeName in self.dbCatalog:
+    tOrder = list( self.dbCatalog )
+    random.shuffle( tOrder )
+    for typeName in tOrder:
       self.log.info( "[PENDING] Checking %s" % typeName )
       pendingInQueue = self.__threadPool.pendingJobs()
-      emptySlots = max( 0, 3000 - pendingInQueue )
+      emptySlots = max( 0, 300 - pendingInQueue )
       self.log.info( "[PENDING] %s in the queue, %d empty slots" % ( pendingInQueue, emptySlots ) )
       if emptySlots < 1:
         continue
