@@ -13,8 +13,9 @@ from DIRAC.Core.DISET.private.Transports.SSL.SocketInfoFactory import gSocketInf
 from DIRAC.Core.Security import Locations
 from DIRAC.Core.Security.X509Chain import X509Chain
 from DIRAC.Core.Security.X509Certificate import X509Certificate
+from DIRAC.Core.Utilities.LockRing import gLockRing
 
-GSI.SSL.set_thread_safe()
+gLockRing.gsiAction( GSI.SSL.set_thread_safe )()
 
 class SSLTransport( BaseTransport ):
 
@@ -113,7 +114,7 @@ class SSLTransport( BaseTransport ):
     oClientTransport.setClientSocket( oClientSocket )
     return S_OK( oClientTransport )
 
-
+  @gLockRing.gsiAction
   def _read( self, bufSize = 4096, skipReadyCheck = False ):
     self.__lock()
     try:
@@ -140,6 +141,7 @@ class SSLTransport( BaseTransport ):
   def isLocked( self ):
     return self.__locked
 
+  @gLockRing.gsiAction
   def _write( self, buffer ):
     self.__lock()
     try:

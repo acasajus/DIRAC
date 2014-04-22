@@ -7,6 +7,7 @@ from hashlib import md5
 
 from DIRAC.Core.Utilities.ReturnValues import S_ERROR, S_OK
 from DIRAC.Core.Utilities.DIRACSingleton import DIRACSingleton
+from DIRAC.Core.Utilities.ThreadSafe import WORM
 
 class LockRing( object ):
   __metaclass__ = DIRACSingleton
@@ -15,6 +16,8 @@ class LockRing( object ):
     random.seed()
     self.__locks = {}
     self.__events = {}
+    self.__enableGSIWORM = True
+    self.__gsiWORM = False
 
   def __genName( self, container ):
     name = md5( str( time.time() + random.random() ) ).hexdigest()
@@ -35,6 +38,22 @@ class LockRing( object ):
       else:
         self.__locks[ lockName ] = threading.Lock()
     return self.__locks[ lockName ]
+
+  def gsiAction( self, funcToCall ):
+    if self.__enableGSIWORM:
+      if not self.__gsiWORM:
+        self.__gsiWORM = WORM( 1000 )
+      return self.__gsiWORM.read( funcToCall )
+    else:
+      return funcToCall
+
+  def _gsiPause( self, funcToCall ):
+    if self.__enableGSIWORM:
+      if not self.__gsiWORM:
+        self.__gsiWORM = WORM( 1000 )
+      return self.__gsiWORM.write( funcToCall )
+    else:
+      return funcToCall
 
   def getEvent( self, evName = "" ):
     if not evName:
@@ -84,6 +103,8 @@ class LockRing( object ):
         self.__events[ evName ].set()
       except KeyError:
         pass
+
+gLockRing = LockRing()
 
 if __name__ == "__main__":
   lr = LockRing()

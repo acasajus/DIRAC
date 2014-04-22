@@ -18,7 +18,6 @@ class SocketInfo:
   __cachedCAsCRLsLastLoaded = 0
   __cachedCAsCRLsLoadLock = LockRing().getLock()
 
-
   def __init__( self, infoDict, sslContext = False ):
     self.infoDict = infoDict
     #HACK:DISABLE CRLS!!!!!
@@ -197,7 +196,6 @@ class SocketInfo:
     for crl in crlList:
       caStore.add_crl( crl )
     return S_OK( caStore )
-
 
   def __createContext( self ):
     clientContext = self.__getValue( 'clientMode', False )

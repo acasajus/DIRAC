@@ -13,8 +13,7 @@ from DIRAC.Core.Utilities.ReturnValues import S_ERROR, S_OK
 from DIRAC.Core.Utilities import List, Network
 from DIRAC.Core.DISET.private.Transports.SSL.SocketInfo import SocketInfo
 from DIRAC.Core.DISET.private.Transports.SSL.SessionManager import gSessionManager
-from DIRAC.Core.DISET.private.Transports.SSL.FakeSocket import FakeSocket
-from DIRAC.Core.DISET.private.Transports.SSL.ThreadSafeSSLObject import ThreadSafeSSLObject
+from DIRAC.Core.Utilities.LockRing import gLockRing
 
 if GSI.__version__ < "0.5.0":
   raise Exception( "Required GSI version >= 0.5.0" )
@@ -33,7 +32,7 @@ class SocketInfoFactory:
     except Exception, e:
       return S_ERROR( "Error while creating SSL context: %s" % str( e ) )
 
-  def generateServerInfo( self, kwargs ):
+  def __generateServerInfo( self, kwargs ):
     infoDict = { 'clientMode' : False, 'timeout' : 30 }
     for key in kwargs.keys():
       infoDict[ key ] = kwargs[ key ]
@@ -96,6 +95,7 @@ class SocketInfoFactory:
     #Connected!
     return S_OK( sslSocket )
 
+  @gLockRing.gsiAction
   def getSocket( self, hostAddress, **kwargs ):
     hostName = hostAddress[0]
     retVal = self.generateClientInfo( hostName, kwargs )
@@ -131,11 +131,12 @@ class SocketInfoFactory:
       gSessionManager.set( sessionId, sslSocket.get_session() )
     return S_OK( socketInfo )
 
+  @gLockRing.gsiAction
   def getListeningSocket( self, hostAddress, listeningQueueSize = 5, reuseAddress = True, **kwargs ):
     osSocket = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
     if reuseAddress:
       osSocket.setsockopt( socket.SOL_SOCKET, socket.SO_REUSEADDR, 1 )
-    retVal = self.generateServerInfo( kwargs )
+    retVal = self.__generateServerInfo( kwargs )
     if not retVal[ 'OK' ]:
       return retVal
     socketInfo = retVal[ 'Value' ]
@@ -145,8 +146,9 @@ class SocketInfoFactory:
     socketInfo.setSSLSocket( sslSocket )
     return S_OK( socketInfo )
 
+  @gLockRing.gsiAction
   def renewServerContext( self, origSocketInfo ):
-    retVal = self.generateServerInfo( origSocketInfo.infoDict )
+    retVal = self.__generateServerInfo( origSocketInfo.infoDict )
     if not retVal[ 'OK' ]:
       return retVal
     socketInfo = retVal[ 'Value' ]
