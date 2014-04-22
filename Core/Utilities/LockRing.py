@@ -47,7 +47,7 @@ class LockRing( object ):
     else:
       return funcToCall
 
-  def _gsiPause( self, funcToCall ):
+  def gsiPause( self, funcToCall ):
     if self.__enableGSIWORM:
       if not self.__gsiWORM:
         self.__gsiWORM = WORM( 1000 )
